@@ -134,11 +134,11 @@ def mess_up(cluster_dict, p):
 
 
 # get metrics for all adjacent pairs in dir_path
-def get_metrics(dir_path='Downloads/cluster_data/features/', p=.20, get_app_discrepancies=True, first_clustering=AgglomerativeClustering, second_clustering=SpectralClustering, limit_to_n=None):
+def get_metrics(dir_path='Downloads/cluster_data/features/', p=.20, swap_corr_p=0, get_app_discrepancies=True, first_clustering=AgglomerativeClustering, second_clustering=SpectralClustering, limit_to_n=None):
     cluster_data, _, dates = manual_clustering.get_clusterings_info(limit_to_n=limit_to_n, clustering_type=first_clustering)
 
     if second_clustering:
-        second_cluster_data, _, dates2 = manual_clustering.get_clusterings_info(limit_to_n=limit_to_n, clustering_type=second_clustering)
+        second_cluster_data, _, dates2 = manual_clustering.get_clusterings_info(limit_to_n=limit_to_n, clustering_type=second_clustering, swap_p = swap_corr_p)
         assert all(dates2 == dates)
         cluster_data2 = []
         for i in range(min(len(second_cluster_data), len(cluster_data))):
@@ -196,17 +196,18 @@ def show_metrics(app_discrepancies, apps_added, apps_dropped, metrics_ls, dates)
     plot_data(data=app_discrepancies, title="# Apps Dropped", x_labels=dates[1:])
 
 
-def run_script(first_clustering=AgglomerativeClustering, second_clustering=SpectralClustering, limit_to_n=None, p=0):
+def run_script(first_clustering=AgglomerativeClustering, second_clustering=SpectralClustering, limit_to_n=None, swap_corr_p=0, p=0):
 
-    metrics_ls, app_discrepancies, apps_added, apps_dropped, dates = get_metrics(p=p, first_clustering=first_clustering, second_clustering=second_clustering, limit_to_n=limit_to_n)
+    metrics_ls, app_discrepancies, apps_added, apps_dropped, dates = get_metrics(swap_corr_p=swap_corr_p, p=p, first_clustering=first_clustering, second_clustering=second_clustering, limit_to_n=limit_to_n)
     return app_discrepancies, apps_added, apps_dropped, metrics_ls, dates
 
 def main(limit_to_n=None):
     all_metrics_ls = []
     print('ami, ari, v_score')
-    # for p in [0]:#np.array(range(0,6))/5.:
-    _,_,_, metrics_ls, dates = run_script(first_clustering=AgglomerativeClustering, second_clustering=SpectralClustering, limit_to_n=limit_to_n)
-    all_metrics_ls.append(metrics_ls[1::2])
+    num_p = 4
+    for swap_corr_p in np.array(range(0,num_p))/float(num_p-1):
+        _,_,_, metrics_ls, dates = run_script(first_clustering=AgglomerativeClustering, second_clustering=AgglomerativeClustering, limit_to_n=limit_to_n, swap_corr_p=swap_corr_p)
+        all_metrics_ls.append(metrics_ls[1::2])
     app_discrepancies, apps_added, apps_dropped, metrics_ls, dates = run_script(first_clustering=AgglomerativeClustering,  second_clustering=None, limit_to_n=limit_to_n)
     all_metrics_ls.append(metrics_ls)
     show_metrics(app_discrepancies, apps_added, apps_dropped, all_metrics_ls, dates)

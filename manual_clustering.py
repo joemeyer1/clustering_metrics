@@ -6,17 +6,17 @@ from numpy import sort
 
 
 # get clustering_type clusterings as {app:cluster_i} and list of lists of cluster_i's
-def get_clusterings_info(similarity_matrices_path = 'Downloads/cluster_data/features/', limit_to_n=None, clustering_type=AgglomerativeClustering):
-    all_clusters, apps_arrays, dates = get_clusterings(similarity_matrices_path, limit_to_n, clustering_type=clustering_type)
+def get_clusterings_info(similarity_matrices_path = 'Downloads/cluster_data/features/', limit_to_n=None, clustering_type=AgglomerativeClustering, swap_p=0):
+    all_clusters, apps_arrays, dates = get_clusterings(similarity_matrices_path, limit_to_n, clustering_type=clustering_type, swap_p=swap_p)
     app_cluster_dicts = get_app_cluster_dict(all_clusters, apps_arrays)
     return app_cluster_dicts, all_clusters, dates
 
 
 # HELPERS FOR get_clusterings_info()
 
-def get_clusterings(similarity_matrices_path = 'Downloads/cluster_data/features/', limit_to_n=None, clustering_type=AgglomerativeClustering):
+def get_clusterings(similarity_matrices_path = 'Downloads/cluster_data/features/', limit_to_n=None, clustering_type=AgglomerativeClustering, swap_p=0):
     matrix_arrays, apps_arrays, dates = dir_to_dfs(similarity_matrices_path)[:,:limit_to_n]
-    all_clusters = get_all_clusters(matrix_arrays, clustering_type=clustering_type)
+    all_clusters = get_all_clusters(matrix_arrays, clustering_type=clustering_type, swap_p=swap_p)
     apps_clusters_dict = {}
     assert len(matrix_arrays) == len(apps_arrays)
         
@@ -59,10 +59,11 @@ def dir_to_dfs(similarity_matrices_path = 'Downloads/cluster_data/features/'):
     return np.array([matrix_arrays, apps_arrays, dates])
 
 
-def get_all_clusters(matrix_arrays, clustering_type=AgglomerativeClustering):
+def get_all_clusters(matrix_arrays, clustering_type=AgglomerativeClustering, swap_p=0):
     all_clusters = []
+    print("messing up w probability {}".format(swap_p))
     for matrix_array in matrix_arrays:
-        clusters = get_clusters(matrix_array, clustering_type=clustering_type)
+        clusters = get_clusters(matrix_array, clustering_type=clustering_type, swap_p=swap_p)
         all_clusters.append(clusters)
         print('.', end='')
     print("got clusterings from arrays")
@@ -106,9 +107,10 @@ def df_to_array(matrix_df):
 # HELPERS FOR get_all_clusters()
 
 
-def get_clusters(matrix_array: np.ndarray, clustering_type=AgglomerativeClustering, n_clusters=20, n_components=700, clustering_delta=1.0):
+def get_clusters(matrix_array: np.ndarray, clustering_type=AgglomerativeClustering, n_clusters=20, n_components=700, clustering_delta=1.0, swap_p=0):
 
     # Note: it is important to use float64 for the algorithms downstream
+    matrix_array = mess_up_correlations(matrix_array, swap_p=swap_p)
     normalized_correlation_matrix = matrix_array.astype(np.float64)
     normalized_correlation_matrix = np.around(normalized_correlation_matrix, 4)
 
@@ -141,6 +143,23 @@ def get_clusters(matrix_array: np.ndarray, clustering_type=AgglomerativeClusteri
 
 # HELPER FOR get_clusters()
 
-def mess_up_correlations(correlation_matrix):
+def mess_up_correlations(correlation_matrix: np.ndarray, swap_p=.2):
+    # raise Exception("corr mat: ", correlation_matrix)
+    x_switch = np.random.choice(a=list(range(len(correlation_matrix))), size=int(swap_p*len(correlation_matrix)), replace=True)
+    y_switch = np.random.choice(a=list(range(len(correlation_matrix[0]))), size=int(swap_p*len(correlation_matrix[0])), replace=True)
+    n_switch = min(len(x_switch)-1, len(y_switch)-1)
+    # print("n switch: ", n_switch)
+    if n_switch > 0:
+        for i in range(0, n_switch, 2):
+            j = i+1
+            x1 = x_switch[i]
+            x2 = x_switch[j]
+            y1 = y_switch[i]
+            y2 = y_switch[j]
+            correlation_matrix[x1][y1], correlation_matrix[x2][y2] = correlation_matrix[x2][y2], correlation_matrix[x1][y1]
+    return correlation_matrix
+
+
+
 
 
