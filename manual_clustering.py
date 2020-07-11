@@ -145,18 +145,18 @@ def get_clusters(matrix_array: np.ndarray, clustering_type=AgglomerativeClusteri
 
 def mess_up_correlations(correlation_matrix: np.ndarray, swap_p=.2):
     # raise Exception("corr mat: ", correlation_matrix)
-    x_switch = np.random.choice(a=list(range(len(correlation_matrix))), size=int(swap_p*len(correlation_matrix)), replace=True)
-    y_switch = np.random.choice(a=list(range(len(correlation_matrix[0]))), size=int(swap_p*len(correlation_matrix[0])), replace=True)
-    n_switch = min(len(x_switch)-1, len(y_switch)-1)
-    # print("n switch: ", n_switch)
-    if n_switch > 0:
-        for i in range(0, n_switch, 2):
-            j = i+1
-            x1 = x_switch[i]
-            x2 = x_switch[j]
-            y1 = y_switch[i]
-            y2 = y_switch[j]
-            correlation_matrix[x1][y1], correlation_matrix[x2][y2] = correlation_matrix[x2][y2], correlation_matrix[x1][y1]
+    xcoords = list(range(len(correlation_matrix)))
+    ycoords = list(range(len(correlation_matrix[0])))
+    coords = []
+    for x in xcoords:
+        for y in ycoords:
+            coords.append((x,y))
+    xys = np.random.choice(a=coords, size=int(swap_p*len(coords)), replace=False)
+    for i in range(0, len(xys)-1,2):
+        j = i+1
+        x1, y1 = coords[i]
+        x2, y2 = coords[j]
+        correlation_matrix[x1][y1], correlation_matrix[x2][y2] = correlation_matrix[x2][y2], correlation_matrix[x1][y1]
     return correlation_matrix
 
 
